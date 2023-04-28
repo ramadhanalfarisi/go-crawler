@@ -1,7 +1,9 @@
 package main
 
-import "github.com/ramadhanalfarisi/go-crawler/helpers"
+import "github.com/ramadhanalfarisi/go-crawler/app"
 
 func main() {
-	helpers.Crawl()
+	var app app.App
+	app.CreateRoutes()
+	app.Run()
 }

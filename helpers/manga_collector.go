@@ -4,34 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 
 	"github.com/gocolly/colly"
+	"github.com/ramadhanalfarisi/go-crawler/model"
 )
 
-type Manga struct {
-	Title     string
-	Genres    string
-	Year      string
-	Volumes   string
-	Chapters  string
-	Themes    string
-	Authors   string
-	Statistic Statistic
-}
-
-type Statistic struct {
-	Score      string
-	Ranked     string
-	Popularity string
-	Members    int
-}
-
-func Crawl() {
+func CrawlManga(mg *[]model.Manga) {
 	c := colly.NewCollector(
 		colly.AllowedDomains("myanimelist.net", "www.myanimelist.net"),
-		colly.MaxDepth(3),
+		colly.MaxDepth(1),
 	)
 	infoCollector := c.Clone()
 
@@ -47,17 +29,15 @@ func Crawl() {
 	})
 
 	infoCollector.OnHTML("#contentWrapper", func(e *colly.HTMLElement) {
-		manga := Manga{}
-		statistic := Statistic{}
+		manga := model.Manga{}
+		statistic := model.Statistic{}
 		manga.Title = e.ChildText("span.h1-title > span")
-
 		statistic.Score = e.ChildText("span.score-label")
 		statistic.Ranked = e.ChildText("span.ranked > strong")
 		statistic.Popularity = e.ChildText("span.popularity > strong")
-		statistic.Members, _ = strconv.Atoi(strings.ReplaceAll(strings.TrimSpace(e.ChildText("span.members > strong")), ",", ""))
 		manga.Volumes = strings.TrimSpace(e.ChildText("#totalVols"))
 		manga.Chapters = strings.TrimSpace(e.ChildText("#totalChaps"))
-		manga.Authors = strings.TrimSpace(strings.ReplaceAll(e.ChildText("span.author"), "/\u0026/", "&"))
+		manga.Authors = strings.TrimSpace(e.ChildText("span.author"))
 
 		e.ForEach("div.spaceit_pad", func(i int, h *colly.HTMLElement) {
 			label := h.ChildText("span.dark_text")
@@ -97,6 +77,7 @@ func Crawl() {
 		})
 
 		manga.Statistic = statistic
+		*mg = append(*mg, manga)
 		json, err := json.Marshal(manga)
 		if err != nil {
 			log.Println(err)
